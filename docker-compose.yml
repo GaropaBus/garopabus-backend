@@ -12,7 +12,7 @@ services:
     depends_on:
       - postgres
     environment:
-      DATABASE_URL: postgres://$POSTGRES_USER:$POSTGRES_PASSWORD@postgres-garopabus:5432/$POSTGRES_DB  # Usando o nome do container do PostgreSQL
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres-garopabus:5432/${POSTGRES_DB}  # Usando o nome do container do PostgreSQL
     volumes:
       - .:/app
       - /app/node_modules
