@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: garopabus-backend  # Nome do container da aplicação
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "8022:8022"
+    depends_on:
+      - postgres
+    environment:
+      DATABASE_URL: postgres://$POSTGRES_USER:$POSTGRES_PASSWORD@postgres-garopabus:5432/$POSTGRES_DB  # Usando o nome do container do PostgreSQL
+    volumes:
+      - .:/app
+      - /app/node_modules
+
+  postgres:
+    image: postgres:13
+    container_name: postgres-garopabus  # Nome do container do PostgreSQL
+    restart: always
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
