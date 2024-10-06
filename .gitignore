@@ -1,4 +1,10 @@
+# Package folders
 build
 node_modules
+
+# Dependency files
 pnpm-lock.yaml
+package-lock.json
+
+# Environment files
 .env
