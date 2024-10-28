@@ -7,12 +7,18 @@ generator client {
   provider = "prisma-client-js"
 }
 
-model Paradas {
-  ID_parada   Int     @id @default(autoincrement())
-  latitude    Decimal @db.Decimal(10, 8)
-  longitude   Decimal @db.Decimal(11, 8)
+model User {
+  id       Int    @id @default(autoincrement())
+  username String @db.VarChar(50) @unique
+  password String @db.VarChar(255)
+}
 
-  paradasRotas  ParadasRotas[]
+model Paradas {
+  ID_parada    Int          @id @default(autoincrement())
+  latitude     Decimal      @db.Decimal(10, 8)
+  longitude    Decimal      @db.Decimal(11, 8)
+
+  paradasRotas ParadasRotas[]
 }
 
 model RotasBairros {
@@ -28,7 +34,7 @@ model ParadasRotas {
   ID_parada      Int
   ID_rota_bairro Int
 
-  paradas       Paradas    @relation(fields: [ID_parada], references: [ID_parada])
+  paradas       Paradas      @relation(fields: [ID_parada], references: [ID_parada])
   rotasBairros  RotasBairros @relation(fields: [ID_rota_bairro], references: [ID_rota_bairro])
 
   @@id([ID_parada, ID_rota_bairro])

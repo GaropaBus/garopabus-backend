@@ -6,13 +6,14 @@ import {
   updateHorario,
   deleteHorario,
 } from "../controllers/horarios.controller";
+import { authenticateToken } from "../services/jwt.service";
 
 const router = Router();
 
 router.get("/", getAllHorarios);
-router.post("/", createHorario);
+router.post("/", authenticateToken, createHorario);
 router.get("/:id", getHorarioById);
-router.put("/:id", updateHorario);
-router.delete("/:id", deleteHorario);
+router.put("/:id", authenticateToken, updateHorario);
+router.delete("/:id", authenticateToken, deleteHorario);
 
 export default router;
