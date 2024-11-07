@@ -1,23 +1,30 @@
-# Base image
-FROM node:18-alpine
+FROM ghcr.io/astral-sh/uv AS uv
 
-# Set working directory
+FROM python:3.10-slim
+ARG TARGETARCH
+ENV PYTHONUNBUFFERED=1
 WORKDIR /app
 
-# Copy package.json and package-lock.json
-COPY package*.json ./
+# Instalar pacotes necessários
+RUN apt-get update && apt-get install curl streamlink chromium -y
 
-# Install dependencies
-RUN npm install
+# Copiar o pyproject.toml
+COPY pyproject.toml .
 
-# Copy the rest of the application
+# Gerar requirements.txt com pip-compile
+RUN pip-compile --output-file=requirements.txt pyproject.toml
+
+# Instalar dependências usando uv
+RUN --mount=from=uv,source=/uv,target=/bin/uv \
+    apt-get -y install gcc musl-dev && \
+    uv pip install --system -r requirements.txt && \
+    apt-get -y autoremove gcc musl-dev && apt-get clean
+
+# Copiar o código da aplicação
 COPY . .
 
-# Generate Prisma client
-RUN npx prisma generate
+# Instalar o código da aplicação no ambiente
+RUN --mount=from=uv,source=/uv,target=/bin/uv \
+    uv pip install --system -e .
 
-# Expose the port
-EXPOSE 8022
-
-# Start the application
-CMD ["npm", "start"]
+ENTRYPOINT [ "python", "manage.py" ]

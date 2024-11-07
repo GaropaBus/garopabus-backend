@@ -1,0 +1,16 @@
+[project]
+name = "garopabus"
+version = "0.1.0"
+description = "Sistema de informações de horários de ônibus"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "Django==5.1.3",
+    "djangorestframework==3.15.2",
+    "psycopg2==2.9.10",
+    "python-dotenv==1.0.1",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
