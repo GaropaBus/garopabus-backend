@@ -19,6 +19,7 @@ RUN apt-get update && \
 COPY pyproject.toml .
 
 # Gerar requirements.txt com pip-compile
+RUN pip install pip-tools
 RUN pip-compile --output-file=requirements.txt pyproject.toml
 
 # Instalar dependências usando uv
