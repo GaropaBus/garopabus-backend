@@ -55,11 +55,4 @@ jobs:
           script: |
             cd /home/${{ secrets.VPS_USER }}/garopabus-files/
             docker-compose pull
-            docker-compose up -d --build
-            # Wait for PostgreSQL to be ready
-            echo "Waiting for PostgreSQL to be ready..."
-            until docker exec postgres-garopabus pg_isready; do
-              sleep 2
-            done
-            # Run Prisma migrations
-            docker exec garopabus-backend npx prisma migrate deploy
+            docker-compose down && docker-compose up -d --build
