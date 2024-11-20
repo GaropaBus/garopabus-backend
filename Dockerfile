@@ -26,6 +26,7 @@ RUN --mount=from=uv,source=/uv,target=/bin/uv \
 
 # Coletar arquivos estáticos
 COPY .env.example .env
+RUN cat .env
 RUN python manage.py collectstatic --noinput
 RUN rm -f .env
 
