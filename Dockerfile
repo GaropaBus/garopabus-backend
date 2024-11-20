@@ -25,7 +25,9 @@ RUN --mount=from=uv,source=/uv,target=/bin/uv \
     uv pip install --system -e .
 
 # Coletar arquivos estáticos
+COPY .env .env
 RUN python manage.py collectstatic --noinput
+RUN rm -f .env
 
 # Expor a porta que o Gunicorn vai rodar
 EXPOSE 8022
