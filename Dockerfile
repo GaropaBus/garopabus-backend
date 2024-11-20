@@ -1,42 +1,34 @@
 FROM ghcr.io/astral-sh/uv AS uv
 
 FROM python:3.10-slim
-
-ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1 \
-    PIP_NO_CACHE_DIR=1
-
+ENV PYTHONUNBUFFERED=1
 WORKDIR /app
 
-# Instalar pacotes necessários
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    curl \
-    libpq-dev \
+# Instalar dependências do sistema necessárias para o Django
+RUN apt-get update && apt-get install -y \
+    gcc \
     && rm -rf /var/lib/apt/lists/*
 
-# Copiar o pyproject.toml
+# Copiar apenas os arquivos necessários para instalação de dependências
 COPY pyproject.toml .
 
-# Gerar requirements.txt com pip-compile
-RUN pip install pip-tools
-RUN pip-compile --output-file=requirements.txt pyproject.toml
-
-# Instalar dependências usando uv
+# Instalar dependências usando UV
 RUN --mount=from=uv,source=/uv,target=/bin/uv \
-    apt-get -y install gcc musl-dev && \
-    uv pip install --system -r requirements.txt && \
-    apt-get -y autoremove gcc musl-dev && apt-get clean
+    uv pip install --system -r pyproject.toml && \
+    apt-get purge -y gcc && apt-get autoremove -y && apt-get clean
 
-# Copiar o código da aplicação
+# Copiar o resto do projeto
 COPY . .
 
-# Instalar o código da aplicação no ambiente
+# Instalar o projeto em modo editável
 RUN --mount=from=uv,source=/uv,target=/bin/uv \
     uv pip install --system -e .
 
-# Configurar Gunicorn como servidor WSGI para produção
-RUN pip install gunicorn
+# Coletar arquivos estáticos
+RUN python manage.py collectstatic --noinput
 
-# Comando de inicialização para o ambiente de produção com Gunicorn
-CMD ["gunicorn", "garopabus.wsgi:application", "--bind", "0.0.0.0:8022", "--workers", "4", "--threads", "2"]
+# Expor a porta que o Gunicorn vai rodar
+EXPOSE 8022
+
+# Comando para rodar com Gunicorn
+CMD ["gunicorn", "--bind", "0.0.0.0:8022", "garopabus.wsgi:application"]
