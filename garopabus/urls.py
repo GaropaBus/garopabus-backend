@@ -15,12 +15,16 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from rest_framework import permissions
+from rest_framework.permissions import IsAuthenticated
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth import views as auth_views
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from transporte import views, admin
+from django.contrib import admin
+from transporte import views
 
 # Criar o esquema do Swagger
 schema_view = get_schema_view(
@@ -33,7 +37,7 @@ schema_view = get_schema_view(
         license=openapi.License(name="MIT License"),
     ),
     public=True,
-    permission_classes=(permissions.AllowAny,),
+    #permission_classes=(IsAuthenticated,),
 )
 
 # Configurar o roteador para os ViewSets
@@ -48,8 +52,12 @@ router.register(r'rotas_ponto_onibus', views.RotaPontoOnibusViewSet)
 # Definir as URLs
 urlpatterns = [
     path('api/', include(router.urls)),  # Inclui as rotas da API
+
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),  # Para obter o token
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
-    path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
+
+    path('swagger/', login_required(schema_view.with_ui('swagger', cache_timeout=0)), name='schema-swagger-ui'),
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
+    path('admin/', admin.site.urls),
+    path('accounts/', include('rest_framework.urls')),
 ]
