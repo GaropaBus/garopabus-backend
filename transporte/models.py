@@ -29,17 +29,6 @@ class HorarioOnibus(models.Model):
     def __str__(self):
         return f'{self.id_rota.nome} - {self.dia_semana}'
 
-# Modelo para a tabela de "logs"
-class Log(models.Model):
-    created_at = models.DateTimeField(auto_now_add=True)
-    tipo = models.CharField(max_length=50)  # Ex.: 'CREATE', 'UPDATE', 'DELETE'
-    mensagem = models.TextField()           # Descrição da ação
-    sql_executado = models.TextField(null=True, blank=True)  # Opcional: registrar o SQL executado
-    usuario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
-
-    def __str__(self):
-        return f'{self.tipo} - {self.created_at}'
-
 # Modelo para a tabela de "pontos_trajeto"
 class PontoTrajeto(models.Model):
     id_rota = models.ForeignKey(Rota, on_delete=models.CASCADE)

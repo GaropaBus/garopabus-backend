@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Rota, HorarioOnibus, Log, PontoTrajeto, PontoOnibus, RotaPontoOnibus
+from .models import Rota, HorarioOnibus, PontoTrajeto, PontoOnibus, RotaPontoOnibus
 
 class RotaSerializer(serializers.ModelSerializer):
     class Meta:
@@ -9,11 +9,6 @@ class RotaSerializer(serializers.ModelSerializer):
 class HorarioOnibusSerializer(serializers.ModelSerializer):
     class Meta:
         model = HorarioOnibus
-        fields = '__all__'
-
-class LogSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Log
         fields = '__all__'
 
 class PontoTrajetoSerializer(serializers.ModelSerializer):

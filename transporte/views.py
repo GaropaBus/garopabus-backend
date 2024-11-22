@@ -2,8 +2,8 @@ from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework import status
-from .models import Rota, HorarioOnibus, Log, PontoTrajeto, PontoOnibus, RotaPontoOnibus
-from .serializers import RotaSerializer, HorarioOnibusSerializer, LogSerializer, PontoTrajetoSerializer, PontoOnibusSerializer, RotaPontoOnibusSerializer
+from .models import Rota, HorarioOnibus, PontoTrajeto, PontoOnibus, RotaPontoOnibus
+from .serializers import RotaSerializer, HorarioOnibusSerializer, PontoTrajetoSerializer, PontoOnibusSerializer, RotaPontoOnibusSerializer
 from django.contrib.admin.models import CHANGE
 
 from transporte.logging import LoggableMixin
@@ -49,10 +49,6 @@ class HorarioOnibusViewSet(viewsets.ModelViewSet):
         if self.action in ['list', 'retrieve']:
             return [AllowAny()]
         return [IsAuthenticated()]
-
-class LogViewSet(viewsets.ModelViewSet):
-    queryset = Log.objects.all()
-    serializer_class = LogSerializer
 
 class PontoTrajetoViewSet(viewsets.ModelViewSet):
     queryset = PontoTrajeto.objects.all()

@@ -5,7 +5,6 @@ from . import views
 router = DefaultRouter()
 router.register(r'rotas', views.RotaViewSet)
 router.register(r'horarios', views.HorarioOnibusViewSet)
-router.register(r'logs', views.LogViewSet)
 router.register(r'pontos_trajeto', views.PontoTrajetoViewSet)
 router.register(r'pontos_onibus', views.PontoOnibusViewSet)
 router.register(r'rotas_ponto_onibus', views.RotaPontoOnibusViewSet)
