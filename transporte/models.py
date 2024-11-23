@@ -1,5 +1,4 @@
 from django.db import models
-from django.contrib.auth.admin import User
 
 # Create your models here.
 
@@ -18,17 +17,17 @@ class Rota(models.Model):
     status = models.BooleanField(default=True)
 
     def __str__(self):
-        return self.nome
+        return f'{self.bairro_origem } - { self.bairro_destino }'
 
 # Modelo para a tabela de "horarios_onibus"
 class HorarioOnibus(models.Model):
     id_rota = models.ForeignKey(Rota, on_delete=models.CASCADE)
     dia_semana = models.CharField(max_length=10, choices=TipoDiaSemana.choices)
-    hora_partida = models.DateTimeField()
-    hora_chegada = models.DateTimeField()
+    hora_partida = models.TimeField()
+    hora_chegada = models.TimeField()
 
     def __str__(self):
-        return f'{self.id_rota.nome} - {self.dia_semana}'
+        return f'{self.id_rota.bairro_origem } - { self.id_rota.bairro_destino } / {self.dia_semana}'
 
 # Modelo para a tabela de "pontos_trajeto"
 class PontoTrajeto(models.Model):
