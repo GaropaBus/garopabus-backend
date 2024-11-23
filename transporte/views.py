@@ -57,7 +57,7 @@ class RotaViewSet(LoggableMixin, viewsets.ModelViewSet):
             "message": "Rota desativada com sucesso"
         }, status=status.HTTP_200_OK)
 
-class HorarioOnibusViewSet(viewsets.ModelViewSet):
+class HorarioOnibusViewSet(LoggableMixin, viewsets.ModelViewSet):
     queryset = HorarioOnibus.objects.all()
     serializer_class = HorarioOnibusSerializer
 
@@ -108,7 +108,7 @@ class PontoTrajetoViewSet(viewsets.ModelViewSet):
             return [AllowAny()]
         return [IsAuthenticated()]
 
-class PontoOnibusViewSet(viewsets.ModelViewSet):
+class PontoOnibusViewSet(LoggableMixin, viewsets.ModelViewSet):
     queryset = PontoOnibus.objects.all()
     serializer_class = PontoOnibusSerializer
 
@@ -116,6 +116,20 @@ class PontoOnibusViewSet(viewsets.ModelViewSet):
         if self.action in ['list', 'retrieve']:
             return [AllowAny()]
         return [IsAuthenticated()]
+    
+    def destroy(self, request, *args, **kwargs):
+        try:
+            pontos_onibus = PontoOnibus.objects.get(pk=self.kwargs["pk"])
+        except PontoOnibus.DoesNotExist:
+            return Response({
+                "success": False,
+                "message": "O ponto de ônibus solicitado não foi encontrado."
+            }, status=status.HTTP_404_NOT_FOUND)
+        pontos_onibus.delete()
+        return Response({
+            "success": True,
+            "message": "Ponto de ônibus desativado com sucesso."
+        }, status=status.HTTP_200_OK)
 
 class RotaPontoOnibusViewSet(viewsets.ModelViewSet):
     queryset = RotaPontoOnibus.objects.all()
