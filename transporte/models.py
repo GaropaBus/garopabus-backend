@@ -11,7 +11,8 @@ class TipoDiaSemana(models.TextChoices):
 
 # Modelo para a tabela de "rotas"
 class Rota(models.Model):
-    nome = models.CharField(max_length=100)
+    bairro_origem = models.CharField(max_length=100)
+    bairro_destino  = models.CharField(max_length=100)
     nome_variacao = models.CharField(max_length=100, null=True, blank=True)
     tipo = models.CharField(max_length=10, choices=[('principal', 'Principal'), ('variacao', 'Variação')])
     status = models.BooleanField(default=True)
