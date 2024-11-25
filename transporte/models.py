@@ -5,8 +5,7 @@ from django.db import models
 # Enum para os tipos de dia da semana
 class TipoDiaSemana(models.TextChoices):
     DIA_UTIL = 'dia_util'
-    SABADO = 'sabado'
-    DOMINGO = 'domingo'
+    FINAL_SEMANA_FERIADO = 'final_semana_feriado'
 
 # Modelo para a tabela de "rotas"
 class Rota(models.Model):

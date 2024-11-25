@@ -99,7 +99,7 @@ class HorarioOnibusViewSet(LoggableMixin, viewsets.ModelViewSet):
             "message": "Horário de ônibus desativado com sucesso."
         }, status=status.HTTP_200_OK)
 
-class PontoTrajetoViewSet(viewsets.ModelViewSet):
+class PontoTrajetoViewSet(LoggableMixin, viewsets.ModelViewSet):
     queryset = PontoTrajeto.objects.all()
     serializer_class = PontoTrajetoSerializer
 
@@ -131,7 +131,7 @@ class PontoOnibusViewSet(LoggableMixin, viewsets.ModelViewSet):
             "message": "Ponto de ônibus desativado com sucesso."
         }, status=status.HTTP_200_OK)
 
-class RotaPontoOnibusViewSet(viewsets.ModelViewSet):
+class RotaPontoOnibusViewSet(LoggableMixin, viewsets.ModelViewSet):
     queryset = RotaPontoOnibus.objects.all()
     serializer_class = RotaPontoOnibusSerializer
 
