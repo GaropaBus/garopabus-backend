@@ -30,7 +30,7 @@ RUN python manage.py collectstatic --noinput
 RUN rm -f .env
 
 # Expor a porta que o Gunicorn vai rodar
-EXPOSE 8022
+EXPOSE 8000
 
 # Comando para rodar com Gunicorn
-CMD ["gunicorn", "--bind", "0.0.0.0:8022", "garopabus.wsgi:application"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "garopabus.wsgi:application"]
