@@ -21,7 +21,7 @@ class Rota(models.Model):
 # Modelo para a tabela de "horarios_onibus"
 class HorarioOnibus(models.Model):
     id_rota = models.ForeignKey(Rota, on_delete=models.CASCADE)
-    dia_semana = models.CharField(max_length=10, choices=TipoDiaSemana.choices)
+    dia_semana = models.CharField(max_length=20, choices=TipoDiaSemana.choices)
     hora_partida = models.TimeField()
     hora_chegada = models.TimeField()
 
