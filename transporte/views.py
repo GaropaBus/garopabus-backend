@@ -15,9 +15,32 @@ class RotaViewSet(LoggableMixin, viewsets.ModelViewSet):
     serializer_class = RotaSerializer
 
     def get_permissions(self):
-        if self.action in ['list', 'retrieve']:  # Ações de leitura (GET)
-            return [AllowAny()]  # Qualquer usuário pode acessar
-        return [IsAuthenticated()] # Outros métodos precisam de autenticação
+        if self.action in ['create', 'destroy']:  # Ações de leitura (GET)
+            return [IsAuthenticated()] # Apenas esses métodos precisam de autenticação
+        return [AllowAny()] # Qualquer usuário pode acessar
+    
+    @action(detail=False, methods=['get'], url_path='filtrado')
+    def listar_trajetos(self, request):
+        todas_rotas = Rota.objects.filter(status=True)
+        
+        sentido_garopaba = []
+        sentido_bairros = []
+
+        for rota in todas_rotas:
+            if rota.bairro_origem == "Garopaba" and rota.bairro_destino != "Garopaba":
+                sentido_bairros.append(rota)
+            elif rota.bairro_destino == "Garopaba" and rota.bairro_origem != "Garopaba":
+                sentido_garopaba.append(rota)
+
+        sentido_garopaba_data = RotaSerializer(sentido_garopaba, many=True).data
+        sentido_bairros_data = RotaSerializer(sentido_bairros, many=True).data
+
+        response_data = {
+            "sentido_garopaba": sentido_garopaba_data,
+            "sentido_bairros": sentido_bairros_data
+        }
+
+        return Response(response_data, status=status.HTTP_200_OK)
 
     def create(self, request, *args, **kwargs):
         origem = request.data.get("bairro_origem")
