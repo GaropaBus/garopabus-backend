@@ -13,6 +13,7 @@ class Rota(models.Model):
     bairro_destino  = models.CharField(max_length=100)
     nome_variacao = models.CharField(max_length=100, null=True, blank=True)
     tipo = models.CharField(max_length=10, choices=[('principal', 'Principal'), ('variacao', 'Variação')])
+    id_rota_principal = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True)
     status = models.BooleanField(default=True)
 
     def __str__(self):

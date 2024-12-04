@@ -21,7 +21,7 @@ class RotaViewSet(LoggableMixin, viewsets.ModelViewSet):
     
     @action(detail=False, methods=['get'], url_path='filtrado')
     def listar_trajetos(self, request):
-        todas_rotas = Rota.objects.filter(status=True)
+        todas_rotas = Rota.objects.filter(status=True, tipo="principal")
         
         sentido_garopaba = []
         sentido_bairros = []
@@ -95,18 +95,32 @@ class HorarioOnibusViewSet(LoggableMixin, viewsets.ModelViewSet):
             bairro_origem, bairro_destino = rota_nome.split('-')
         except ValueError:
             return Response({"success": False, "message": "Formato inválido para a rota. Use origem-destino."}, status=400)
-
-        rota = Rota.objects.filter(
+        
+        rota_principal = Rota.objects.filter(
             bairro_origem__iexact=bairro_origem,
-            bairro_destino__iexact=bairro_destino
+            bairro_destino__iexact=bairro_destino,
+            tipo="principal"
         ).first()
 
-        if not rota:
-            return Response({"success": False, "message": "Rota não encontrada"}, status=404)
+        if not rota_principal:
+            return Response({"success": False, "message": "Rota principal não encontrada"}, status=404)
 
-        horarios = HorarioOnibus.objects.filter(id_rota=rota)
-        serializer = self.get_serializer(horarios, many=True)
-        return Response(serializer.data)
+        rotas_variacoes = Rota.objects.filter(id_rota_principal=rota_principal)
+        todas_rotas = [rota_principal] + list(rotas_variacoes)
+        horarios = HorarioOnibus.objects.filter(id_rota__in=todas_rotas)
+        resultado = []
+        for horario in horarios:
+            tipo_variacao = "Direto" if horario.id_rota == rota_principal else horario.id_rota.nome_variacao
+            resultado.append({
+                "id": horario.id,
+                "dia_semana": horario.dia_semana,
+                "hora_partida": horario.hora_partida.strftime("%H:%M"),
+                "hora_chegada": horario.hora_chegada.strftime("%H:%M"),
+                "id_rota": horario.id_rota.id,
+                "tipo_variacao": tipo_variacao
+            })
+
+        return Response(resultado, status=status.HTTP_200_OK)
     
     def destroy(self, request, *args, **kwargs):
         try:
