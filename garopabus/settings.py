@@ -38,20 +38,27 @@ TYPE_ENV = env('NODE_ENV', default='development')
 
 if TYPE_ENV == 'development':
     CORS_ALLOWED_ORIGIN_REGEXES = [
-        r"^http:\/\/localhost(:\d+)?$",  # Permitir localhost com ou sem portas
-        r"^http:\/\/127\.0\.0\.1(:\d+)?$",  # Permitir 127.0.0.1 com ou sem portas
-        r"^https:\/\/.*\.garopabus\.uk$",  # Subdomínios garopabus.uk
+        r"^http:\/\/localhost(:\d+)?$",         # Localhost com qualquer porta
+        r"^http:\/\/127\.0\.0\.1(:\d+)?$",      # 127.0.0.1 com qualquer porta
+        r"^https:\/\/dev\.garopabus\.uk$",      # Frontend dev.garopabus.uk
+        r"^https:\/\/dev\.api\.garopabus\.uk$", # API de desenvolvimento
     ]
     CORS_ALLOWED_ORIGINS = [
-        "https://garopabus.uk",  # API de desenvolvimento
+        "http://localhost:8080",       # Frontend rodando localmente
+        "https://dev.garopabus.uk",    # Frontend dev.garopabus.uk
+        "https://dev.api.garopabus.uk" # API dev.api.garopabus.uk
     ]
-else:
+else:  # Configuração para produção
+    # Permitindo apenas subdomínios da produção
     CORS_ALLOWED_ORIGIN_REGEXES = [
-        r"^https:\/\/.*\.garopabus\.uk$",  # Regex para qualquer subdomínio de garopabus.uk
+        r"^https:\/\/garopabus\.uk$",        # Frontend principal
+        r"^https:\/\/api\.garopabus\.uk$",   # API principal
     ]
     CORS_ALLOWED_ORIGINS = [
-        "https://garopabus.uk",  # API de desenvolvimento
+        "https://garopabus.uk",      # Frontend principal
+        "https://api.garopabus.uk"  # API principal
     ]
+
 
 CORS_ALLOW_METHODS = [
     "GET",
