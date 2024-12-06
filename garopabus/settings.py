@@ -34,7 +34,7 @@ DEBUG = env.bool('DEBUG', default=False)
 
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[])
 
-TYPE_ENV = env('NODE_ENV', default='development')
+TYPE_ENV = env('IMAGE_TAG', default='development')
 
 if TYPE_ENV == 'development':
     CORS_ALLOWED_ORIGIN_REGEXES = [
