@@ -1,7 +1,7 @@
 services:
   app:
     image: ${DOCKER_USERNAME}/garopabus-backend:${IMAGE_TAG}
-    container_name: ${APP_CONTAINER_NAME}
+    container_name: ${APP_CONTAINER_NAME}-backend
     restart: always
     env_file:
       - .env
