@@ -47,6 +47,12 @@ else:
         r"^https:\/\/.*\.garopabus\.uk$",  # Regex para qualquer subdomínio de garopabus.uk
     ]
 
+CORS_ALLOW_HEADERS = [
+    "content-type",
+    "authorization",
+    "x-requested-with",
+]
+
 # Application definition
 
 INSTALLED_APPS = [
