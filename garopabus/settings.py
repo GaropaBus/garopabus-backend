@@ -38,14 +38,28 @@ TYPE_ENV = env('NODE_ENV', default='development')
 
 if TYPE_ENV == 'development':
     CORS_ALLOWED_ORIGIN_REGEXES = [
-        r"^http:\/\/localhost:\d+$",  # Regex para localhost em qualquer porta
-        r"^http:\/\/127\.0\.0\.1:\d+$",  # Regex para 127.0.0.1 em qualquer porta
-        r"^https:\/\/.*\.garopabus\.uk$",  # Regex para qualquer subdomínio de garopabus.uk
+        r"^http:\/\/localhost(:\d+)?$",  # Permitir localhost com ou sem portas
+        r"^http:\/\/127\.0\.0\.1(:\d+)?$",  # Permitir 127.0.0.1 com ou sem portas
+        r"^https:\/\/.*\.garopabus\.uk$",  # Subdomínios garopabus.uk
+    ]
+    CORS_ALLOWED_ORIGINS = [
+        "https://garopabus.uk",  # API de desenvolvimento
     ]
 else:
     CORS_ALLOWED_ORIGIN_REGEXES = [
         r"^https:\/\/.*\.garopabus\.uk$",  # Regex para qualquer subdomínio de garopabus.uk
     ]
+    CORS_ALLOWED_ORIGINS = [
+        "https://garopabus.uk",  # API de desenvolvimento
+    ]
+
+CORS_ALLOW_METHODS = [
+    "GET",
+    "POST",
+    "PUT",
+    "DELETE",
+    "OPTIONS",
+]
 
 CORS_ALLOW_HEADERS = [
     "content-type",
