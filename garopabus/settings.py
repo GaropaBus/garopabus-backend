@@ -34,11 +34,18 @@ DEBUG = env.bool('DEBUG', default=False)
 
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[])
 
-CORS_ALLOWED_ORIGINS = [
-    f"http://{host}" for host in ALLOWED_HOSTS if not host.startswith("*")
-] + [
-    f"https://{host}" for host in ALLOWED_HOSTS if not host.startswith("*")
-]
+TYPE_ENV = env('NODE_ENV', default='development')
+
+if TYPE_ENV == 'development':
+    CORS_ALLOWED_ORIGIN_REGEXES = [
+        r"^http:\/\/localhost:\d+$",  # Regex para localhost em qualquer porta
+        r"^http:\/\/127\.0\.0\.1:\d+$",  # Regex para 127.0.0.1 em qualquer porta
+        r"^https:\/\/.*\.garopabus\.uk$",  # Regex para qualquer subdomínio de garopabus.uk
+    ]
+else:
+    CORS_ALLOWED_ORIGIN_REGEXES = [
+        r"^https:\/\/.*\.garopabus\.uk$",  # Regex para qualquer subdomínio de garopabus.uk
+    ]
 
 # Application definition
 
