@@ -128,7 +128,7 @@ class HorarioOnibusViewSet(LoggableMixin, viewsets.ModelViewSet):
 
         rotas_variacoes = Rota.objects.filter(id_rota_principal=rota_principal)
         todas_rotas = [rota_principal] + list(rotas_variacoes)
-        horarios = HorarioOnibus.objects.filter(id_rota__in=todas_rotas)
+        horarios = HorarioOnibus.objects.filter(id_rota__in=todas_rotas).order_by('hora_partida')
         resultado = []
         for horario in horarios:
             tipo_variacao = "Direto" if horario.id_rota == rota_principal else horario.id_rota.nome_variacao
