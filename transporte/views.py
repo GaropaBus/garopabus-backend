@@ -6,6 +6,7 @@ from rest_framework.decorators import action
 from rest_framework import status
 from .models import Rota, HorarioOnibus, PontoTrajeto, PontoOnibus, RotaPontoOnibus
 from .serializers import RotaSerializer, HorarioOnibusSerializer, PontoTrajetoSerializer, PontoOnibusSerializer, RotaPontoOnibusSerializer
+from .filters import RotaFilter
 from django.contrib.admin.models import CHANGE
 
 from transporte.logging import LoggableMixin
@@ -41,6 +42,15 @@ class RotaViewSet(LoggableMixin, viewsets.ModelViewSet):
         }
 
         return Response(response_data, status=status.HTTP_200_OK)
+    
+    @action(detail=False, methods=['post'], url_path='filtrar')
+    def filtrar(self, request, *args, **kwargs):
+        filterset = RotaFilter(data=request.data, queryset=self.queryset)
+        if not filterset.is_valid():
+            return Response(filterset.errors, status=400)
+        
+        serializer = self.get_serializer(filterset.qs, many=True)
+        return Response(serializer.data)
 
     def create(self, request, *args, **kwargs):
         origem = request.data.get("bairro_origem")

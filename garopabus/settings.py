@@ -86,6 +86,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'transporte',
     'drf_yasg',
+    'django_filters',
     'rest_framework', 
     'rest_framework_simplejwt',
 ]
@@ -96,6 +97,9 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticatedOrReadOnly',
+    ],
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend',
     ],
 }
 
