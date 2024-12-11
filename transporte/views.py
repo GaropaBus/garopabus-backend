@@ -20,9 +20,20 @@ class RotaViewSet(LoggableMixin, viewsets.ModelViewSet):
             return [IsAuthenticated()] # Apenas esses métodos precisam de autenticação
         return [AllowAny()] # Qualquer usuário pode acessar
     
-    @action(detail=False, methods=['get'], url_path='filtrado')
-    def listar_trajetos(self, request):
-        todas_rotas = Rota.objects.filter(status=True, tipo="principal")
+    @action(detail=False, methods=['get'], url_path='filtrado(?:/(?P<tipo>[^/]+))?')
+    def listar_trajetos(self, request, tipo=None):
+        """
+        Lista trajetos com filtragem opcional pelo tipo.
+        /api/rotas/filtrado/ -> Todos os tipos"
+        /api/rotas/filtrado/variacao/ -> Apenas tipo "variacao"
+        /api/rotas/filtrado/principal/ -> Apenas tipo "principal"
+        """
+        if tipo == "variacao":
+            todas_rotas = Rota.objects.filter(status=True, tipo="variacao")  # Apenas "variacao"
+        elif tipo == "principal":
+            todas_rotas = Rota.objects.filter(status=True, tipo="principal")  # Apenas "principal"
+        else:
+            todas_rotas = Rota.objects.filter(status=True)
         
         sentido_garopaba = []
         sentido_bairros = []
