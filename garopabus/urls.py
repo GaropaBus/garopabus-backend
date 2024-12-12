@@ -22,6 +22,7 @@ from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from django.contrib import admin
 from transporte import views
+from transporte.views import validate_token
 
 # Criar o esquema do Swagger
 schema_view = get_schema_view(
@@ -50,6 +51,7 @@ urlpatterns = [
 
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),  # Para obter o token
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('api/validate-token/', validate_token, name='validate_token'),
 
     path('swagger/', login_required(schema_view.with_ui('swagger', cache_timeout=0)), name='schema-swagger-ui'),
     path('redoc/', login_required(schema_view.with_ui('redoc', cache_timeout=0)), name='schema-redoc'),

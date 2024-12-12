@@ -2,7 +2,7 @@ from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework import status
 from .models import Rota, HorarioOnibus, PontoTrajeto, PontoOnibus, RotaPontoOnibus
 from .serializers import RotaSerializer, HorarioOnibusSerializer, PontoTrajetoSerializer, PontoOnibusSerializer, RotaPontoOnibusSerializer
@@ -197,3 +197,8 @@ class RotaPontoOnibusViewSet(LoggableMixin, viewsets.ModelViewSet):
         if self.action in ['list', 'retrieve']:
             return [AllowAny()]
         return [IsAuthenticated()]
+
+@api_view(['GET']) 
+@permission_classes([IsAuthenticated]) 
+def validate_token(request): 
+    return Response({'message': 'Token válido!'}, status=200)
