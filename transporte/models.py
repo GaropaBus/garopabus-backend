@@ -43,7 +43,7 @@ class PontoTrajeto(models.Model):
 class PontoOnibus(models.Model):
     latitude = models.DecimalField(max_digits=18, decimal_places=14)
     longitude = models.DecimalField(max_digits=18, decimal_places=14)
-    link_maps = models.TextField()
+    link_maps = models.TextField(null=True, blank=True)
 
     def __str__(self):
         return f'Ponto {self.id} - Latitude: {self.latitude}, Longitude: {self.longitude}'
