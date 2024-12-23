@@ -56,3 +56,21 @@ class RotaPontoOnibus(models.Model):
 
     def __str__(self):
         return f'Rota {self.id_rota.nome} - Ponto {self.id_ponto_onibus.id}'
+
+class Notification(models.Model):
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.title}"
+
+class PushSubscription(models.Model):
+    endpoint = models.URLField(unique=True)
+    public_key = models.CharField(max_length=255)
+    auth_key = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.endpoint

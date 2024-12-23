@@ -4,9 +4,11 @@ from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework import status
-from .models import Rota, HorarioOnibus, PontoTrajeto, PontoOnibus, RotaPontoOnibus
-from .serializers import RotaSerializer, HorarioOnibusSerializer, PontoTrajetoSerializer, PontoOnibusSerializer, RotaPontoOnibusSerializer
+from garopabus.settings import TYPE_ENV, VAPID_PUBLIC_KEY
+from .models import Rota, HorarioOnibus, PontoTrajeto, PontoOnibus, RotaPontoOnibus, Notification, PushSubscription
+from .serializers import RotaSerializer, HorarioOnibusSerializer, PontoTrajetoSerializer, PontoOnibusSerializer, RotaPontoOnibusSerializer, NotificationSerializer, PushSubscriptionSerializer
 from .filters import RotaFilter
+from .utils import send_push_notification
 from django.contrib.admin.models import CHANGE
 
 from transporte.logging import LoggableMixin
@@ -197,8 +199,113 @@ class RotaPontoOnibusViewSet(LoggableMixin, viewsets.ModelViewSet):
         if self.action in ['list', 'retrieve']:
             return [AllowAny()]
         return [IsAuthenticated()]
+    
+class NotificationViewSet(LoggableMixin, viewsets.ModelViewSet):
+    queryset = Notification.objects.filter(read=False)
+    serializer_class = NotificationSerializer
+    
+    def get_permissions(self):
+        if self.action in ['list', 'retrieve']:
+            return [AllowAny()]
+        return [IsAuthenticated()]
+    
+    @action(detail=True, methods=['post'], url_path='send')
+    def send_notification(self, request, pk=None):
+        try:
+            notification = Notification.objects.get(pk=pk)
+        except Notification.DoesNotExist:
+            return Response({
+                    "success": False,
+                    "message": "A notificação solicitada não foi encontrada"
+                }, status=status.HTTP_404_NOT_FOUND)
 
-@api_view(['GET']) 
+        title = notification.title
+        body = notification.message
+        click_action = "https://dev.garopabus.uk/user/ajuda/" if TYPE_ENV == "development" else "https://garopabus.uk/user/ajuda/" 
+
+        if not all([title, body, click_action]):
+            return Response({
+                "success": False,
+                "message": "A notificação não possui todos os dados necessários para ser enviada."
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            count_sucess = send_push_notification(
+                title=title,
+                body=body,
+                click_action=click_action
+            )
+            return Response({
+                "success": True,
+                "detail": f"Notificação enviada com sucesso, para {count_sucess} usuarios."}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response(
+                {"detail": f"Erro ao enviar notificação: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    def destroy(self, request, *args, **kwargs):
+        try:
+            instance = Notification.objects.get(pk=self.kwargs["pk"])
+        except Notification.DoesNotExist:
+            return Response({
+                "success": False,
+                "message": "A notificação solicitada não foi encontrada"
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        if instance.read:
+            return Response({
+                "success": False,
+                "message": "A notificação já está lida"
+            }, status=status.HTTP_400_BAD_REQUEST)
+        instance.read = True
+        instance.save()
+        self.perform_log_action(
+            instance,
+            action_flag=CHANGE,
+            change_message=[{
+                "action": "soft delete",
+                "changes": [
+                    {"field": "read", "old_value": False, "new_value": True}
+                ]
+            }]
+        )
+        return Response({
+            "success": True,
+            "message": "Notificação marcada como lida com sucesso"
+        }, status=status.HTTP_200_OK)    
+
+class PushSubscriptionViewSet(LoggableMixin, viewsets.ModelViewSet):
+    queryset = PushSubscription.objects.all()
+    serializer_class = PushSubscriptionSerializer
+
+    def get_permissions(self):
+        if self.action in ['create', 'get_vapid_public_key']:
+            return [AllowAny()]
+        return [IsAuthenticated()]
+
+    def create(self, request, *args, **kwargs):
+        serializer = PushSubscriptionSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                "success": True,
+                "message": "Endpoint cadastrado com sucesso."
+                }, status=status.HTTP_201_CREATED)
+        if "endpoint" in serializer.errors:
+            return Response({
+                "success": False,
+                "message": "Este Endpoint já está cadastrado."
+                }, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(detail=False, methods=['get'], url_path='vapid-key')
+    def get_vapid_public_key(self, request):
+        return Response({
+            "vapid_public_key": VAPID_PUBLIC_KEY
+        }, status=status.HTTP_200_OK)
+
+@api_view(['GET'])
 @permission_classes([IsAuthenticated]) 
 def validate_token(request): 
     return Response({'message': 'Token válido!'}, status=200)

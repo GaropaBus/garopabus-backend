@@ -30,7 +30,7 @@ schema_view = get_schema_view(
         title="GaropaBus API",
         default_version='v1',
         description="API para o sistema de transporte GaropaBus",
-        terms_of_service="https://garopabus.uk/terms/",
+        terms_of_service="https://garopabus.uk/termos/",
         contact=openapi.Contact(email="contato@garopabus.uk"),
         license=openapi.License(name="MIT License"),
     ),
@@ -44,6 +44,8 @@ router.register(r'horarios', views.HorarioOnibusViewSet)
 router.register(r'pontos_trajeto', views.PontoTrajetoViewSet)
 router.register(r'pontos_onibus', views.PontoOnibusViewSet)
 router.register(r'rotas_ponto_onibus', views.RotaPontoOnibusViewSet)
+router.register(r'notifications', views.NotificationViewSet)
+router.register(r'subscription-notification', views.PushSubscriptionViewSet)
 
 # Definir as URLs
 urlpatterns = [

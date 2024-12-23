@@ -74,6 +74,10 @@ CORS_ALLOW_HEADERS = [
     "x-requested-with",
 ]
 
+VAPID_PUBLIC_KEY = env('VAPID_PUBLIC_KEY')
+VAPID_PRIVATE_KEY = env('VAPID_PRIVATE_KEY')
+VAPID_ADMIN_EMAIL = env('VAPID_ADMIN_EMAIL')
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -190,7 +194,7 @@ SECURE_HSTS_PRELOAD = True
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'America/Sao_Paulo'
 
 USE_I18N = True
 

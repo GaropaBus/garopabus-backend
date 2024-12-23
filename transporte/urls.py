@@ -8,6 +8,8 @@ router.register(r'horarios', views.HorarioOnibusViewSet)
 router.register(r'pontos_trajeto', views.PontoTrajetoViewSet)
 router.register(r'pontos_onibus', views.PontoOnibusViewSet)
 router.register(r'rotas_ponto_onibus', views.RotaPontoOnibusViewSet)
+router.register(r'notifications', views.NotificationViewSet)
+router.register(r'subscription-notification', views.PushSubscriptionViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
