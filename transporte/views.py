@@ -143,7 +143,10 @@ class HorarioOnibusViewSet(LoggableMixin, viewsets.ModelViewSet):
         fim_semana = []
 
         for horario in horarios:
-            tipo_variacao = "Direto" if horario.id_rota == rota_principal else horario.id_rota.nome_variacao
+            tipo_variacao = (
+                "Direto" if horario.id_rota == rota_principal.id
+                else (horario.id_rota.nome_variacao if horario.id_rota.nome_variacao is not None else None)
+            )
             horario_data = {
                 "id": horario.id,
                 "dia_semana": horario.dia_semana,
