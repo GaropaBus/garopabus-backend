@@ -97,11 +97,13 @@ class RotaViewSet(LoggableMixin, viewsets.ModelViewSet):
         instance.status = False
         instance.save()
         self.perform_log_action(
-            instance,
+            instance=instance,
             action_flag=CHANGE,
-            change_message=[{"action": "soft delete", "changes": [
-                {"field": "is_active", "old_value": True, "new_value": False}
-            ]}]
+            log_data={
+                'changes': [
+                    {'field': 'status', 'from': True, 'to': False}
+                ]
+            }
         )
         return Response({
             "success": True,
@@ -176,7 +178,7 @@ class HorarioOnibusViewSet(LoggableMixin, viewsets.ModelViewSet):
                 "success": False,
                 "message": "O horário de ônibus solicitado não foi encontrado."
             }, status=status.HTTP_404_NOT_FOUND)
-        horario_onibus.delete()
+        super().destroy(request, *args, **kwargs)
         return Response({
             "success": True,
             "message": "Horário de ônibus desativado com sucesso."
@@ -210,7 +212,7 @@ class PontoOnibusViewSet(LoggableMixin, viewsets.ModelViewSet):
                 "success": False,
                 "message": "O ponto de ônibus solicitado não foi encontrado."
             }, status=status.HTTP_404_NOT_FOUND)
-        pontos_onibus.delete()
+        super().destroy(request, *args, **kwargs)
         return Response({
             "success": True,
             "message": "Ponto de ônibus desativado com sucesso."
@@ -257,14 +259,30 @@ class NotificationViewSet(LoggableMixin, viewsets.ModelViewSet):
             }, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            count_sucess = send_push_notification(
+            count_success = send_push_notification(
                 title=title,
                 body=body,
                 click_action=click_action
             )
+
+            log_data = {
+                'notification_id': notification.pk,
+                'title': title,
+                'body': body,
+                'count_success': count_success,
+                'click_action': click_action,
+            }
+
+            self.perform_log_action(
+                instance=notification,
+                action_flag=4, # SEND_NOTIFICATION
+                log_data=log_data
+            )
+
             return Response({
                 "success": True,
-                "detail": f"Notificação enviada com sucesso, para {count_sucess} usuarios."}, status=status.HTTP_200_OK)
+                "detail": f"Notificação enviada com sucesso, para {count_success} usuários."
+            }, status=status.HTTP_200_OK)
         except Exception as e:
             return Response(
                 {"detail": f"Erro ao enviar notificação: {str(e)}"},
@@ -290,8 +308,7 @@ class NotificationViewSet(LoggableMixin, viewsets.ModelViewSet):
         self.perform_log_action(
             instance,
             action_flag=CHANGE,
-            change_message=[{
-                "action": "soft delete",
+            log_data=[{
                 "changes": [
                     {"field": "read", "old_value": False, "new_value": True}
                 ]
