@@ -5,7 +5,7 @@ ENV PYTHONUNBUFFERED=1
 WORKDIR /app
 
 # Instalar dependências do sistema necessárias para o Django
-RUN apt-get update && apt-get install tzdata -y && export TZ=America/Sao_Paulo && ln -fs /usr/share/zoneinfo/$TZ /etc/localtime && dpkg-reconfigure --frontend noninteractive tzdata \
+RUN apt-get update && apt-get install tzdata gcc -y && export TZ=America/Sao_Paulo && ln -fs /usr/share/zoneinfo/$TZ /etc/localtime && dpkg-reconfigure --frontend noninteractive tzdata \
     gcc \
     && rm -rf /var/lib/apt/lists/*
 
