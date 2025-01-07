@@ -9,7 +9,7 @@ from .models import Rota, HorarioOnibus, PontoTrajeto, PontoOnibus, RotaPontoOni
 from .serializers import RotaSerializer, HorarioOnibusSerializer, PontoTrajetoSerializer, PontoOnibusSerializer, RotaPontoOnibusSerializer, NotificationSerializer, PushSubscriptionSerializer
 from .filters import RotaFilter
 from .utils import send_push_notification
-from django.contrib.admin.models import CHANGE
+from django.contrib.admin.models import CHANGE, DELETION
 
 from transporte.logging import LoggableMixin
 
@@ -98,7 +98,7 @@ class RotaViewSet(LoggableMixin, viewsets.ModelViewSet):
         instance.save()
         self.perform_log_action(
             instance=instance,
-            action_flag=CHANGE,
+            action_flag=DELETION,
             log_data={
                 'changes': [
                     {'field': 'status', 'from': True, 'to': False}
@@ -307,12 +307,12 @@ class NotificationViewSet(LoggableMixin, viewsets.ModelViewSet):
         instance.save()
         self.perform_log_action(
             instance,
-            action_flag=CHANGE,
-            log_data=[{
+            action_flag=DELETION,
+            log_data={
                 "changes": [
-                    {"field": "read", "old_value": False, "new_value": True}
+                    {"field": "read", "from": False, "to": True}
                 ]
-            }]
+            }
         )
         return Response({
             "success": True,

@@ -1,3 +1,6 @@
+from django.dispatch import receiver
+from django.contrib.auth.signals import user_logged_in
+from rest_framework_simplejwt.views import TokenObtainPairView
 from django.contrib.admin.models import LogEntry, ADDITION, CHANGE, DELETION
 from django.contrib.contenttypes.models import ContentType
 from rest_framework import status
@@ -6,6 +9,7 @@ import json
 
 
 SEND_NOTIFICATION = 4
+LOGIN_ACTION = 5
 
 
 class LoggableMixin:
@@ -75,6 +79,7 @@ class LoggableMixin:
             CHANGE: 'updated',
             DELETION: 'deleted',
             SEND_NOTIFICATION: 'send_notification',
+            LOGIN_ACTION: 'jwt_login'
         }.get(action_flag, 'unknown')
 
     def create(self, request, *args, **kwargs):
@@ -163,3 +168,60 @@ class LoggableMixin:
                 })
 
         return changes
+
+
+class LoggingTokenObtainPairView(LoggableMixin, TokenObtainPairView):
+    """
+    View personalizada para logging de autenticação JWT.
+    Herda do LoggableMixin para reaproveitar os métodos de logging.
+    """
+
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+
+        if response.status_code == 200:
+            # Obtém o usuário baseado no username fornecido
+            username = request.data.get('username')
+            from django.contrib.auth import get_user_model
+            User = get_user_model()
+            user = User.objects.get(username=username)
+
+            log_data = {
+                'login_type': 'jwt',
+                'status': 'success',
+                'request_data': {
+                    'username': username,
+                }
+            }
+
+            self.request = request
+            self.request.user = user
+
+            self.perform_log_action(
+                instance=user,
+                action_flag=LOGIN_ACTION,
+                log_data=log_data
+            )
+
+        return response
+
+
+@receiver(user_logged_in)
+def log_admin_login(sender, request, user, **kwargs):
+    """Signal para capturar logins no admin do Django."""
+    if request and 'admin' in request.path:
+        logger = type('AdminLogger', (LoggableMixin,), {})()
+        logger.request = request
+        logger.request.user = user
+
+        log_data = {
+            'login_type': 'admin',
+            'status': 'success',
+            'path': request.path
+        }
+
+        logger.perform_log_action(
+            instance=user,
+            action_flag=LOGIN_ACTION,
+            log_data=log_data
+        )

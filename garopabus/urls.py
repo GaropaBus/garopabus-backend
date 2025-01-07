@@ -19,8 +19,9 @@ from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework_simplejwt.views import TokenRefreshView
 from django.contrib import admin
+from transporte.logging import LoggingTokenObtainPairView
 from transporte import views
 from transporte.views import validate_token
 
@@ -51,7 +52,7 @@ router.register(r'subscription-notification', views.PushSubscriptionViewSet)
 urlpatterns = [
     path('api/', include(router.urls)),  # Inclui as rotas da API
 
-    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),  # Para obter o token
+    path('api/token/', LoggingTokenObtainPairView.as_view(), name='token_obtain_pair'),  # Para obter o token
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/token/validate/', validate_token, name='validate_token'),
 
