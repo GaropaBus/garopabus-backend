@@ -1,11 +1,13 @@
 import json
+import unicodedata
 from pywebpush import webpush, WebPushException
 from .models import PushSubscription
 from garopabus.settings import VAPID_PRIVATE_KEY, VAPID_ADMIN_EMAIL
 
+
 def send_push_notification(title, body, click_action):
     subscriptions = PushSubscription.objects.all()
-    count_sucess = 0 
+    count_sucess = 0
 
     for subscription in subscriptions:
         try:
@@ -35,3 +37,24 @@ def send_push_notification(title, body, click_action):
             if "410" in error_message or "404" in error_message:
                 subscription.delete()
     return count_sucess
+
+
+def normalize_route_name(text):
+    """
+    Normaliza o nome da rota:
+    - Remove acentos
+    - Converte para minúsculas
+    - Substitui barras por espaços
+    - Remove espaços extras
+    """
+    # Remove acentos
+    text = ''.join(c for c in unicodedata.normalize('NFKD', text)
+                   if not unicodedata.combining(c))
+
+    # Substitui barras por espaços e normaliza espaços
+    text = text.replace('/', ' ').replace('-', ' ')
+
+    # Remove espaços extras e converte para minúsculas
+    text = ' '.join(text.split()).lower()
+
+    return text

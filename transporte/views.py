@@ -1,3 +1,5 @@
+import urllib
+
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
@@ -8,10 +10,9 @@ from garopabus.settings import TYPE_ENV, VAPID_PUBLIC_KEY
 from .models import Rota, HorarioOnibus, PontoTrajeto, PontoOnibus, RotaPontoOnibus, Notification, PushSubscription
 from .serializers import RotaSerializer, HorarioOnibusSerializer, PontoTrajetoSerializer, PontoOnibusSerializer, RotaPontoOnibusSerializer, NotificationSerializer, PushSubscriptionSerializer
 from .filters import RotaFilter
-from .utils import send_push_notification
-from django.contrib.admin.models import CHANGE, DELETION
-
-from transporte.logging import LoggableMixin
+from .logging import LoggableMixin
+from .utils import send_push_notification, normalize_route_name
+from django.contrib.admin.models import DELETION
 
 
 class RotaViewSet(LoggableMixin, viewsets.ModelViewSet):
@@ -23,6 +24,17 @@ class RotaViewSet(LoggableMixin, viewsets.ModelViewSet):
             # Apenas esses métodos precisam de autenticação
             return [IsAuthenticated()]
         return [AllowAny()]  # Qualquer usuário pode acessar
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        queryset = sorted(
+            queryset, key=lambda x: (
+                min(x.bairro_origem, x.bairro_destino),
+                max(x.bairro_origem, x.bairro_destino),
+            )
+        )
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
     @action(detail=False, methods=['get'], url_path='filtrado(?:/(?P<tipo>[^/]+))?')
     def listar_trajetos(self, request, tipo=None):
@@ -49,6 +61,23 @@ class RotaViewSet(LoggableMixin, viewsets.ModelViewSet):
                 sentido_bairros.append(rota)
             elif rota.bairro_destino == "Garopaba" and rota.bairro_origem != "Garopaba":
                 sentido_garopaba.append(rota)
+
+        sentido_garopaba = sorted(
+            sentido_garopaba, key=lambda x: (x.bairro_origem, x.bairro_destino)
+        )
+        sentido_bairros = sorted(
+            sentido_bairros, key=lambda x: (x.bairro_origem, x.bairro_destino)
+        )
+
+        # Ajustar para que rotas com destinos opostos fiquem próximas
+        sentido_garopaba = sorted(
+            sentido_garopaba, key=lambda x: (
+                min(x.bairro_origem, x.bairro_destino), max(x.bairro_origem, x.bairro_destino))
+        )
+        sentido_bairros = sorted(
+            sentido_bairros, key=lambda x: (
+                min(x.bairro_origem, x.bairro_destino), max(x.bairro_origem, x.bairro_destino))
+        )
 
         sentido_garopaba_data = RotaSerializer(
             sentido_garopaba, many=True).data
@@ -122,16 +151,22 @@ class HorarioOnibusViewSet(LoggableMixin, viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], url_path='rota/(?P<rota_nome>[^/]+)')
     def horarios_por_rota(self, request, rota_nome=None):
-        try:
-            bairro_origem, bairro_destino = rota_nome.split('-')
-        except ValueError:
-            return Response({"success": False, "message": "Formato inválido para a rota. Use origem-destino."}, status=400)
+        rota_nome = urllib.parse.unquote(rota_nome).lower()
+        partes = rota_nome.split('-x-')
 
-        rota_principal = Rota.objects.filter(
-            bairro_origem__iexact=bairro_origem,
-            bairro_destino__iexact=bairro_destino,
-            tipo="principal"
-        ).first()
+        if len(partes) != 2:
+            return Response({"success": False, "message": "Formato inválido para a rota. Use origem-x-destino."}, status=400)
+
+        bairro_origem, bairro_destino = partes
+        bairro_origem = normalize_route_name(bairro_origem)
+        bairro_destino = normalize_route_name(bairro_destino)
+
+        rotas_principais = Rota.objects.filter(tipo="principal")
+        rota_principal = None
+        for rota in rotas_principais:
+            if normalize_route_name(rota.bairro_origem) == bairro_origem and normalize_route_name(rota.bairro_destino) == bairro_destino:
+                rota_principal = rota
+                break
 
         if not rota_principal:
             return Response({"success": False, "message": "Rota principal não encontrada"}, status=404)
@@ -275,7 +310,7 @@ class NotificationViewSet(LoggableMixin, viewsets.ModelViewSet):
 
             self.perform_log_action(
                 instance=notification,
-                action_flag=4, # SEND_NOTIFICATION
+                action_flag=4,  # SEND_NOTIFICATION
                 log_data=log_data
             )
 
