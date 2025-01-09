@@ -22,6 +22,9 @@ class PontoOnibusSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class RotaPontoOnibusSerializer(serializers.ModelSerializer):
+    id_rota = RotaSerializer()
+    id_ponto_onibus = PontoOnibusSerializer()
+    
     class Meta:
         model = RotaPontoOnibus
         fields = '__all__'

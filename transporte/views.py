@@ -1,5 +1,3 @@
-import urllib
-
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
@@ -11,7 +9,7 @@ from .models import Rota, HorarioOnibus, PontoTrajeto, PontoOnibus, RotaPontoOni
 from .serializers import RotaSerializer, HorarioOnibusSerializer, PontoTrajetoSerializer, PontoOnibusSerializer, RotaPontoOnibusSerializer, NotificationSerializer, PushSubscriptionSerializer
 from .filters import RotaFilter
 from .logging import LoggableMixin
-from .utils import send_push_notification, normalize_route_name
+from .utils import send_push_notification, normalize_route_name, obter_rota_principal_e_variacoes
 from django.contrib.admin.models import DELETION
 
 
@@ -151,27 +149,11 @@ class HorarioOnibusViewSet(LoggableMixin, viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], url_path='rota/(?P<rota_nome>[^/]+)')
     def horarios_por_rota(self, request, rota_nome=None):
-        rota_nome = urllib.parse.unquote(rota_nome).lower()
-        partes = rota_nome.split('-x-')
+        rota_principal, rotas_variacoes, erro = obter_rota_principal_e_variacoes(
+            rota_nome)
+        if erro:
+            return Response(erro, status=400)
 
-        if len(partes) != 2:
-            return Response({"success": False, "message": "Formato inválido para a rota. Use origem-x-destino."}, status=400)
-
-        bairro_origem, bairro_destino = partes
-        bairro_origem = normalize_route_name(bairro_origem)
-        bairro_destino = normalize_route_name(bairro_destino)
-
-        rotas_principais = Rota.objects.filter(tipo="principal")
-        rota_principal = None
-        for rota in rotas_principais:
-            if normalize_route_name(rota.bairro_origem) == bairro_origem and normalize_route_name(rota.bairro_destino) == bairro_destino:
-                rota_principal = rota
-                break
-
-        if not rota_principal:
-            return Response({"success": False, "message": "Rota principal não encontrada"}, status=404)
-
-        rotas_variacoes = Rota.objects.filter(id_rota_principal=rota_principal)
         todas_rotas = [rota_principal] + list(rotas_variacoes)
         horarios = HorarioOnibus.objects.filter(
             id_rota__in=todas_rotas).order_by('hora_partida')
@@ -225,9 +207,32 @@ class PontoTrajetoViewSet(LoggableMixin, viewsets.ModelViewSet):
     serializer_class = PontoTrajetoSerializer
 
     def get_permissions(self):
-        if self.action in ['list', 'retrieve']:
+        if self.action in ['list', 'retrieve', 'pontos_por_rota']:
             return [AllowAny()]
         return [IsAuthenticated()]
+
+    @action(detail=False, methods=['get'], url_path='rota/(?P<rota_nome>[^/]+)')
+    def pontos_por_rota(self, request, rota_nome=None):
+        rota_principal, rotas_variacoes, erro = obter_rota_principal_e_variacoes(
+            rota_nome)
+        if erro:
+            return Response(erro, status=400)
+
+        rotas_relacionadas = [rota_principal] + list(rotas_variacoes)
+        pontos_por_variacao = {}
+        for rota in rotas_relacionadas:
+            pontos = PontoTrajeto.objects.filter(
+                id_rota=rota).order_by('ordem')
+            pontos_serializados = PontoTrajetoSerializer(
+                pontos, many=True).data
+            nome_variacao = rota.nome_variacao if rota.nome_variacao else "principal"
+
+            if nome_variacao not in pontos_por_variacao:
+                nome_variacao = normalize_route_name(nome_variacao)
+                pontos_por_variacao[nome_variacao] = []
+
+            pontos_por_variacao[nome_variacao].extend(pontos_serializados)
+        return Response(pontos_por_variacao, status=status.HTTP_200_OK)
 
 
 class PontoOnibusViewSet(LoggableMixin, viewsets.ModelViewSet):
@@ -259,9 +264,29 @@ class RotaPontoOnibusViewSet(LoggableMixin, viewsets.ModelViewSet):
     serializer_class = RotaPontoOnibusSerializer
 
     def get_permissions(self):
-        if self.action in ['list', 'retrieve']:
+        if self.action in ['list', 'retrieve', 'filtrar']:
             return [AllowAny()]
         return [IsAuthenticated()]
+
+    @action(detail=False, methods=['post'], url_path='filtrar', url_name='filtrar')
+    def filtrar(self, request):
+        id_rota = request.data.get('id_rota')
+        id_ponto_onibus = request.data.get('id_ponto_onibus')
+
+        if not id_rota and not id_ponto_onibus:
+            return Response(
+                {"detail": "É necessário fornecer ao menos 'id_rota' ou 'id_ponto_onibus'."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        queryset = self.queryset
+        if id_rota:
+            queryset = queryset.filter(id_rota=id_rota)
+        if id_ponto_onibus:
+            queryset = queryset.filter(id_ponto_onibus=id_ponto_onibus)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class NotificationViewSet(LoggableMixin, viewsets.ModelViewSet):

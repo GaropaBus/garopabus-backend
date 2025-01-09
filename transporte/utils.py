@@ -1,7 +1,9 @@
 import json
+import urllib
 import unicodedata
 from pywebpush import webpush, WebPushException
 from .models import PushSubscription
+from .models import Rota
 from garopabus.settings import VAPID_PRIVATE_KEY, VAPID_ADMIN_EMAIL
 
 
@@ -39,6 +41,34 @@ def send_push_notification(title, body, click_action):
     return count_sucess
 
 
+def obter_rota_principal_e_variacoes(rota_nome):
+    """
+    Obtém a rota principal e suas variações a partir do nome da rota.    
+    """
+    rota_nome = urllib.parse.unquote(rota_nome).lower()
+    partes = rota_nome.split('-x-')
+
+    if len(partes) != 2:
+        return None, None, {"success": False, "message": "Formato inválido para a rota. Use origem-x-destino."}
+
+    bairro_origem, bairro_destino = partes
+    bairro_origem = normalize_route_name(bairro_origem)
+    bairro_destino = normalize_route_name(bairro_destino)
+
+    rotas_principais = Rota.objects.filter(tipo="principal")
+    rota_principal = None
+    for rota in rotas_principais:
+        if normalize_route_name(rota.bairro_origem) == bairro_origem and normalize_route_name(rota.bairro_destino) == bairro_destino:
+            rota_principal = rota
+            break
+
+    if not rota_principal:
+        return None, None, {"success": False, "message": "Rota principal não encontrada"}
+
+    variacoes = Rota.objects.filter(id_rota_principal=rota_principal)
+    return rota_principal, variacoes, None
+
+
 def normalize_route_name(text):
     """
     Normaliza o nome da rota:
@@ -47,14 +77,9 @@ def normalize_route_name(text):
     - Substitui barras por espaços
     - Remove espaços extras
     """
-    # Remove acentos
     text = ''.join(c for c in unicodedata.normalize('NFKD', text)
                    if not unicodedata.combining(c))
-
-    # Substitui barras por espaços e normaliza espaços
     text = text.replace('/', ' ').replace('-', ' ')
-
-    # Remove espaços extras e converte para minúsculas
-    text = ' '.join(text.split()).lower()
+    text = '_'.join(text.split()).lower()
 
     return text
