@@ -211,6 +211,25 @@ class PontoTrajetoViewSet(LoggableMixin, viewsets.ModelViewSet):
             return [AllowAny()]
         return [IsAuthenticated()]
 
+    def create(self, request, *args, **kwargs):
+        id_rota = request.data.get('id_rota')
+        if not id_rota:
+            return Response(
+                {"sucess": False, "detail": "O campo 'id_rota' é obrigatório."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        ultima_ordem = PontoTrajeto.objects.filter(
+            id_rota=id_rota).order_by('-ordem').first()
+
+        nova_ordem = (ultima_ordem.ordem + 1) if ultima_ordem else 1
+        data = request.data.copy()
+        data['ordem'] = nova_ordem
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
     @action(detail=False, methods=['get'], url_path='rota-nome/(?P<rota_nome>[^/]+)')
     def pontos_por_rota_nome(self, request, rota_nome=None):
         rota_principal, rotas_variacoes, erro = obter_rota_principal_e_variacoes(
@@ -239,7 +258,7 @@ class PontoTrajetoViewSet(LoggableMixin, viewsets.ModelViewSet):
         try:
             rota = Rota.objects.get(id=rota_id)
         except Rota.DoesNotExist:
-            return Response({'error': 'Rota não encontrada'}, status=404)
+            return Response({"success": False, "message": "A rota solicitada não foi encontrada"}, status=404)
 
         pontos = PontoTrajeto.objects.filter(id_rota=rota).order_by('ordem')
         pontos_serializados = PontoTrajetoSerializer(pontos, many=True).data
@@ -281,21 +300,18 @@ class RotaPontoOnibusViewSet(LoggableMixin, viewsets.ModelViewSet):
         return [IsAuthenticated()]
 
     def create(self, request, *args, **kwargs):
-        # Atualizado para refletir o campo de entrada
         id_rota = request.data.get('rota_id')
         if not id_rota:
             return Response(
-                {"detail": "O campo 'rota_id' é obrigatório."},
+                {"sucess": False, "detail": "O campo 'rota_id' é obrigatório."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
         ultima_ordem = RotaPontoOnibus.objects.filter(
             id_rota=id_rota).order_by('-ordem').first()
         nova_ordem = (ultima_ordem.ordem + 1) if ultima_ordem else 1
-
         data = request.data.copy()
         data['ordem'] = nova_ordem
-
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
