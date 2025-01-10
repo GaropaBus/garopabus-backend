@@ -207,12 +207,12 @@ class PontoTrajetoViewSet(LoggableMixin, viewsets.ModelViewSet):
     serializer_class = PontoTrajetoSerializer
 
     def get_permissions(self):
-        if self.action in ['list', 'retrieve', 'pontos_por_rota']:
+        if self.action in ['list', 'retrieve', 'pontos_por_rota_nome', 'pontos_por_rota_id']:
             return [AllowAny()]
         return [IsAuthenticated()]
 
-    @action(detail=False, methods=['get'], url_path='rota/(?P<rota_nome>[^/]+)')
-    def pontos_por_rota(self, request, rota_nome=None):
+    @action(detail=False, methods=['get'], url_path='rota-nome/(?P<rota_nome>[^/]+)')
+    def pontos_por_rota_nome(self, request, rota_nome=None):
         rota_principal, rotas_variacoes, erro = obter_rota_principal_e_variacoes(
             rota_nome)
         if erro:
@@ -233,6 +233,18 @@ class PontoTrajetoViewSet(LoggableMixin, viewsets.ModelViewSet):
 
             pontos_por_variacao[nome_variacao].extend(pontos_serializados)
         return Response(pontos_por_variacao, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['get'], url_path='rota-id/(?P<rota_id>[^/]+)')
+    def pontos_por_rota_id(self, request, rota_id=None):
+        try:
+            rota = Rota.objects.get(id=rota_id)
+        except Rota.DoesNotExist:
+            return Response({'error': 'Rota não encontrada'}, status=404)
+
+        pontos = PontoTrajeto.objects.filter(id_rota=rota).order_by('ordem')
+        pontos_serializados = PontoTrajetoSerializer(pontos, many=True).data
+
+        return Response(pontos_serializados, status=status.HTTP_200_OK)
 
 
 class PontoOnibusViewSet(LoggableMixin, viewsets.ModelViewSet):
