@@ -268,10 +268,32 @@ class RotaPontoOnibusViewSet(LoggableMixin, viewsets.ModelViewSet):
             return [AllowAny()]
         return [IsAuthenticated()]
 
+    def create(self, request, *args, **kwargs):
+        # Atualizado para refletir o campo de entrada
+        id_rota = request.data.get('rota_id')
+        if not id_rota:
+            return Response(
+                {"detail": "O campo 'rota_id' é obrigatório."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        ultima_ordem = RotaPontoOnibus.objects.filter(
+            id_rota=id_rota).order_by('-ordem').first()
+        nova_ordem = (ultima_ordem.ordem + 1) if ultima_ordem else 1
+
+        data = request.data.copy()
+        data['ordem'] = nova_ordem
+
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
     @action(detail=False, methods=['post'], url_path='filtrar', url_name='filtrar')
     def filtrar(self, request):
-        id_rota = request.data.get('id_rota')
-        id_ponto_onibus = request.data.get('id_ponto_onibus')
+        id_rota = request.data.get('rota_id')
+        id_ponto_onibus = request.data.get('ponto_onibus_id')
 
         if not id_rota and not id_ponto_onibus:
             return Response(
