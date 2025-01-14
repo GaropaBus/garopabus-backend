@@ -43,7 +43,7 @@ class PontoTrajeto(models.Model):
     longitude = models.DecimalField(max_digits=18, decimal_places=14)
 
     def __str__(self):
-        return f'Ponto {self.id} - {self.id_rota.bairro_origem } X { self.id_rota.bairro_destino }'
+        return f'{self.id_rota.bairro_origem } X { self.id_rota.bairro_destino }'
 
 
 # Modelo para a tabela de "pontos_onibus"
@@ -66,6 +66,8 @@ class RotaPontoOnibus(models.Model):
         return f'Rota {self.id_rota.bairro_origem } X { self.id_rota.bairro_destino } - Ponto {self.id_ponto_onibus.id}'
 
 # Modelo para a tabela de "notificacoes"
+
+
 class Notification(models.Model):
     title = models.CharField(max_length=255)
     message = models.TextField()
@@ -76,6 +78,8 @@ class Notification(models.Model):
         return f"{self.title}"
 
 # Modelo para a tabela de "push_subscriptions"
+
+
 class PushSubscription(models.Model):
     endpoint = models.URLField(unique=True)
     public_key = models.CharField(max_length=255)

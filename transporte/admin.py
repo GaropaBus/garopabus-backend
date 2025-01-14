@@ -53,7 +53,8 @@ class LogEntryAdmin(admin.ModelAdmin):
             2: 'Alteração',
             3: 'Exclusão',
             4: 'Notificação',
-            5: 'Login'
+            5: 'Login',
+            6: 'Atualização em Massa'  # Novo tipo
         }
         try:
             log_data = json.loads(obj.change_message)
@@ -63,7 +64,8 @@ class LogEntryAdmin(admin.ModelAdmin):
                 'updated': 'warning',
                 'deleted': 'danger',
                 'send_notification': 'info',
-                'jwt_login': 'primary'
+                'jwt_login': 'primary',
+                'bulk_update': 'darkOrange'
             }
             color = color_map.get(action, 'secondary')
             return format_html(
@@ -76,13 +78,13 @@ class LogEntryAdmin(admin.ModelAdmin):
                     'danger': '#dc3545',
                     'info': '#17a2b8',
                     'primary': '#007bff',
-                    'secondary': '#6c757d'
+                    'secondary': '#6c757d',
+                    'darkOrange': '#ff8c00'
                 }[color],
                 action.upper()
             )
         except:
             return action_types.get(obj.action_flag, 'Desconhecido')
-    action_type.short_description = 'Tipo de Ação'
 
     def resource_info(self, obj):
         try:
@@ -105,6 +107,15 @@ class LogEntryAdmin(admin.ModelAdmin):
         try:
             log_data = json.loads(obj.change_message)
             details = log_data['action']['details']
+
+            # Bulk Update
+            if log_data['action']['type'] == 'bulk_update':
+                return format_html(
+                    '<div style="min-width:200px">'
+                    '<strong>Pontos Atualizados:</strong> {}<br>'
+                    '</div>',
+                    details['pontos_atualizados'],
+                )
 
             # Login
             if log_data['action']['type'] == 'jwt_login':

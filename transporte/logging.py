@@ -10,6 +10,7 @@ import json
 
 SEND_NOTIFICATION = 4
 LOGIN_ACTION = 5
+BULK_UPDATE = 6
 
 
 class LoggableMixin:
@@ -79,7 +80,8 @@ class LoggableMixin:
             CHANGE: 'updated',
             DELETION: 'deleted',
             SEND_NOTIFICATION: 'send_notification',
-            LOGIN_ACTION: 'jwt_login'
+            LOGIN_ACTION: 'jwt_login',
+            BULK_UPDATE: 'bulk_update'
         }.get(action_flag, 'unknown')
 
     def create(self, request, *args, **kwargs):

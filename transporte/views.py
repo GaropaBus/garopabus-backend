@@ -11,7 +11,7 @@ from .serializers import RotaSerializer, HorarioOnibusSerializer, PontoTrajetoSe
 from .filters import RotaFilter
 from .logging import LoggableMixin
 from .utils import send_push_notification, normalize_route_name, obter_rota_principal_e_variacoes
-from django.contrib.admin.models import DELETION
+from django.contrib.admin.models import DELETION, CHANGE
 
 
 class RotaViewSet(LoggableMixin, viewsets.ModelViewSet):
@@ -291,9 +291,15 @@ class PontoTrajetoViewSet(LoggableMixin, viewsets.ModelViewSet):
 
         try:
             rota = Rota.objects.get(id=id_rota)
+
+            # Captura o estado anterior dos pontos para logging
+            pontos_anteriores = list(PontoTrajeto.objects.filter(
+                id_rota=rota).order_by('ordem').values(
+                'id', 'ordem', 'latitude', 'longitude', 'id_rota'
+            ))
         except Rota.DoesNotExist:
             return Response(
-                {"success": False, "detail": "Rota não encontrada."},
+                {"success": False, "detail": "ID Rota não encontrada."},
                 status=status.HTTP_404_NOT_FOUND
             )
 
@@ -332,11 +338,7 @@ class PontoTrajetoViewSet(LoggableMixin, viewsets.ModelViewSet):
                         # Se o ponto não existe, cria um novo
                         ponto = PontoTrajeto.objects.create(**dados_ponto)
                 else:
-                    # Cria novo ponto
                     ponto = PontoTrajeto.objects.create(**dados_ponto)
-
-                if ponto_id:
-                    ids_processados.add(ponto_id)
 
                 pontos_processados.append({
                     'id': ponto.id,
@@ -346,22 +348,41 @@ class PontoTrajetoViewSet(LoggableMixin, viewsets.ModelViewSet):
                     'id_rota': ponto.id_rota.id
                 })
 
+                # Adiciona o ID ao conjunto
+                ids_processados.add(ponto.id)
+
             except KeyError as e:
                 return Response(
                     {"success": False,
                         "detail": f"Campo obrigatório ausente: {str(e)}"},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-            except Exception as e:
-                return Response(
-                    {"success": False, "detail": str(e)},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
 
         # Remove pontos que não foram incluídos na lista
-        pontos_a_deletar = PontoTrajeto.objects.filter(
-            id_rota=rota).exclude(id__in=ids_processados)
-        pontos_a_deletar.delete()
+        PontoTrajeto.objects.filter(id_rota=rota).exclude(
+            id__in=ids_processados).delete()
+
+        # Prepara e executa o logging após todas as operações terem sido concluídas com sucesso
+        if pontos_processados:
+            log_data = {
+                'pontos_atualizados': len(pontos_processados),
+                'rota_id': id_rota,
+                'rota_nome': str(rota),
+                'before': pontos_anteriores,
+                'after': pontos_processados
+            }
+
+            # Obtém o primeiro ponto para o log
+            primeiro_ponto = PontoTrajeto.objects.filter(
+                id__in=ids_processados, id_rota=rota
+            ).order_by('ordem').first()
+
+            if primeiro_ponto:
+                self.perform_log_action(
+                    instance=primeiro_ponto,
+                    action_flag=6,  # BULK_UPDATE
+                    log_data=log_data
+                )
 
         return Response({
             "success": True,
