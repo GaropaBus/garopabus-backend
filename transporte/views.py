@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework import status
+from django.db import transaction
 from garopabus.settings import TYPE_ENV, VAPID_PUBLIC_KEY
 from .models import Rota, HorarioOnibus, PontoTrajeto, PontoOnibus, RotaPontoOnibus, Notification, PushSubscription
 from .serializers import RotaSerializer, HorarioOnibusSerializer, PontoTrajetoSerializer, PontoOnibusSerializer, RotaPontoOnibusSerializer, NotificationSerializer, PushSubscriptionSerializer
@@ -264,6 +265,109 @@ class PontoTrajetoViewSet(LoggableMixin, viewsets.ModelViewSet):
         pontos_serializados = PontoTrajetoSerializer(pontos, many=True).data
 
         return Response(pontos_serializados, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['post'], url_path='editar-em-massa')
+    @transaction.atomic
+    def editar_em_massa(self, request):
+        """
+        Endpoint para edição em massa de pontos de trajeto.
+        """
+        pontos = request.data
+
+        if not isinstance(pontos, list):
+            return Response(
+                {"success": False, "detail": "O payload deve ser uma lista de pontos."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if not pontos:
+            return Response(
+                {"success": False, "detail": "A lista de pontos está vazia."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Pega o id_rota do primeiro ponto para validação
+        id_rota = pontos[0].get('id_rota')
+
+        try:
+            rota = Rota.objects.get(id=id_rota)
+        except Rota.DoesNotExist:
+            return Response(
+                {"success": False, "detail": "Rota não encontrada."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Valida se todos os pontos são da mesma rota
+        if not all(ponto.get('id_rota') == id_rota for ponto in pontos):
+            return Response(
+                {"success": False, "detail": "Todos os pontos devem pertencer à mesma rota."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        pontos_processados = []
+        ids_processados = set()
+
+        # Processa cada ponto na ordem da lista
+        for ordem, ponto_data in enumerate(pontos, start=1):
+            try:
+                dados_ponto = {
+                    'ordem': ordem,
+                    'latitude': ponto_data['latitude'],
+                    'longitude': ponto_data['longitude'],
+                    'id_rota': rota
+                }
+
+                ponto_id = ponto_data.get('id')
+
+                if ponto_id:
+                    try:
+                        # Tenta encontrar o ponto existente
+                        ponto = PontoTrajeto.objects.get(
+                            id=ponto_id, id_rota=rota)
+                        # Atualiza os campos
+                        for key, value in dados_ponto.items():
+                            setattr(ponto, key, value)
+                        ponto.save()
+                    except PontoTrajeto.DoesNotExist:
+                        # Se o ponto não existe, cria um novo
+                        ponto = PontoTrajeto.objects.create(**dados_ponto)
+                else:
+                    # Cria novo ponto
+                    ponto = PontoTrajeto.objects.create(**dados_ponto)
+
+                if ponto_id:
+                    ids_processados.add(ponto_id)
+
+                pontos_processados.append({
+                    'id': ponto.id,
+                    'ordem': ponto.ordem,
+                    'latitude': str(ponto.latitude),
+                    'longitude': str(ponto.longitude),
+                    'id_rota': ponto.id_rota.id
+                })
+
+            except KeyError as e:
+                return Response(
+                    {"success": False,
+                        "detail": f"Campo obrigatório ausente: {str(e)}"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            except Exception as e:
+                return Response(
+                    {"success": False, "detail": str(e)},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        # Remove pontos que não foram incluídos na lista
+        pontos_a_deletar = PontoTrajeto.objects.filter(
+            id_rota=rota).exclude(id__in=ids_processados)
+        pontos_a_deletar.delete()
+
+        return Response({
+            "success": True,
+            "detail": "Pontos atualizados com sucesso.",
+            "pontos": pontos_processados
+        }, status=status.HTTP_200_OK)
 
 
 class PontoOnibusViewSet(LoggableMixin, viewsets.ModelViewSet):
