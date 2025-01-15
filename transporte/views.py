@@ -396,9 +396,37 @@ class PontoOnibusViewSet(LoggableMixin, viewsets.ModelViewSet):
     serializer_class = PontoOnibusSerializer
 
     def get_permissions(self):
-        if self.action in ['list', 'retrieve']:
+        if self.action in ['list', 'retrieve', 'pontos_por_rota_nome']:
             return [AllowAny()]
         return [IsAuthenticated()]
+
+    @action(detail=False, methods=['get'], url_path='rota-nome/(?P<rota_nome>[^/]+)')
+    def pontos_por_rota_nome(self, request, rota_nome=None):
+        rota_principal, rotas_variacoes, erro = obter_rota_principal_e_variacoes(
+            rota_nome)
+        if erro:
+            return Response(erro, status=400)
+
+        rotas_relacionadas = [rota_principal] + list(rotas_variacoes)
+        pontos_por_variacao = {}
+
+        for rota in rotas_relacionadas:
+            pontos_ordenados = PontoOnibus.objects.filter(
+                rotapontoonibus__id_rota=rota
+            ).order_by('rotapontoonibus__ordem')
+
+            pontos_serializados = PontoOnibusSerializer(
+                pontos_ordenados, many=True).data
+
+            nome_variacao = rota.nome_variacao if rota.nome_variacao else "principal"
+
+            if nome_variacao not in pontos_por_variacao:
+                nome_variacao = normalize_route_name(nome_variacao)
+                pontos_por_variacao[nome_variacao] = []
+
+            pontos_por_variacao[nome_variacao].extend(pontos_serializados)
+
+        return Response(pontos_por_variacao, status=status.HTTP_200_OK)
 
     def destroy(self, request, *args, **kwargs):
         try:
